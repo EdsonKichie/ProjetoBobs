@@ -36,8 +36,8 @@ char hexaKeys[ROWS][COLS] = { // Character matrix for the keypad
   {'*', '0', '#', 'D'}
 };
 
-byte rowPins[ROWS] = {5, 4, 3, 2};        // pin assignments for keypad rows
-byte colPins[COLS] = {6, 7, 8, 9};        // pin assignments for keypad columns
+byte rowPins[ROWS] = {9, 8, 7, 6};        // pin assignments for keypad rows
+byte colPins[COLS] = {5, 4, 3, 2};        // pin assignments for keypad columns
 
 Keypad customKeypad = Keypad( makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 LiquidCrystal lcd(A0, A1, A2, A3, A4, A5);  // pin assignments for LCD
