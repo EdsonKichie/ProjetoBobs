@@ -1,56 +1,54 @@
-#include <SoftwareSerial.h>
-#include <PN532_SWHSU.h>
+#if 0
+#include <SPI.h>
+#include <PN532_SPI.h>
+#include "PN532.h"
+PN532_SPI pn532spi(SPI, 10);
+PN532 nfc(pn532spi);
+#elif 1
+#include <PN532_HSU.h>
 #include <PN532.h>
-#include <LiquidCrystal.h>
-#define BRILHO 10
-LiquidCrystal lcd(A0, A1, A2, A3, A4, A5);
-SoftwareSerial SWSerial( 2, 3 ); // RX, TX
- 
-PN532_SWHSU pn532swhsu( SWSerial );
-PN532 nfc( pn532swhsu );
+PN532_HSU pn532hsu(Serial1);
+PN532 nfc(pn532hsu);
+#else
+#include <Wire.h>
+#include <PN532_I2C.h>
+#include <PN532.h>
+#include <NfcAdapter.h>
+PN532_I2C pn532i2c(Wire);
+PN532 nfc(pn532i2c);
+#endif
 String tagId = "None", dispTag = "None";
 byte nuidPICC[4];
- 
 void setup(void){
-  imprimir("Ligado","");
   Serial.begin(9600);
-  pinMode(12,OUTPUT);
-  pinMode(BRILHO,INPUT);
-  lcd.begin(16, 2);
-  lcd.clear();
-  imprimir("Passe o ","cartao");     
-  analogWrite(BRILHO,180);
-  
-  Serial.println("Seja Bem vindo!");
+  Serial.println("* Teste Modulo PN532 NFC RFID *");
   nfc.begin();
+  //Verifica a conexao do modulo PN532
   uint32_t versiondata = nfc.getFirmwareVersion();
   if (! versiondata)
   {
-    Serial.print("Didn't Find PN53x Module");
-    while (1); // Halt
+    Serial.print("Placa PN53x nao encontrada...");
+    while (1); // halt
   }
-  // Got valid data, print it out!
-  Serial.print("Found chip PN5");
-  Serial.println((versiondata >> 24) & 0xFF, HEX);
-  Serial.print("Firmware ver. ");
-  Serial.print((versiondata >> 16) & 0xFF, DEC);
-  Serial.print('.'); 
-  Serial.println((versiondata >> 8) & 0xFF, DEC);
-  // Configure board to read RFID tags
+  //Conexao ok, mostra informacoes do firmware
+  Serial.print("Encontrado chip PN5"); Serial.println((versiondata >> 24) & 0xFF, HEX);
+  Serial.print("Firmware versao: "); Serial.print((versiondata >> 16) & 0xFF, DEC);
+  Serial.print('.'); Serial.println((versiondata >> 8) & 0xFF, DEC);
+  // Set the max number of retry attempts to read from a card
+  // This prevents us from waiting forever for a card, which is
+  // the default behaviour of the PN532.
+  nfc.setPassiveActivationRetries(0xFF);
+  // configure board to read RFID tags
   nfc.SAMConfig();
-  //Serial.println("Waiting for an ISO14443A Card ...");
+  Serial.println("Aguardando cartao ISO14443A...");
+  Serial.println("");
 }
- 
- 
 void loop()
 {
-
   readNFC();
 }
-
-String tags[] = {"105.168.152.13", "165.252.132.1"};
-void readNFC()
-{
+String tags[] = {"165.252.132.1","83.63.136.149"};
+void readNFC(){
   boolean success;
   uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
   uint8_t uidLength;                       // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
@@ -72,9 +70,12 @@ void readNFC()
     Serial.print(F("tagId is : "));
     Serial.println(tagId);
     bool ok = false;
-    for(int i = 0; i < 2; i++){
+    for(int i = 0; i <2; i++){
        if(tagId.equals(tags[i])){
            ok = true;
+           digitalWrite(7,1);
+           delay(200);
+           digitalWrite(7,0);
        }
     }
 
@@ -82,20 +83,11 @@ void readNFC()
     Serial.print(F("Tag: "));
     Serial.println(tagId);
     Serial.print(F(": Autorizado"));
-    imprimir("","LIBERADO");
-    delay(2000);
-    lcd.clear();
-    delay(500);
     ok = false;
-    digitalWrite(12,1);
    }else{
     Serial.print(F("Tag: "));
     Serial.println(tagId);
     Serial.print(F(": Não Autorizado"));
-    imprimir("","TENTAR");
-    delay(2000);
-    lcd.clear();
-    delay(500);
    }
     Serial.println("");
     delay(1000);  // 1 second halt
@@ -115,11 +107,4 @@ String tagToString(byte id[4]){
     else tagId += String(id[i]);
   }
   return tagId;
-}
-void imprimir(String texto1, String texto2){
-  lcd.clear();                           
-  lcd.setCursor(0, 0);                   
-  lcd.print(texto1);         
-  lcd.setCursor(0, 1);                   
-  lcd.print(texto2);
 }
