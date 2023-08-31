@@ -17,29 +17,29 @@ int contar = true;
 
 #define DEFAULT_DELAY 300
 
-const byte ROWS = 4; //four rows
-const byte COLS = 4; //four columns
+const byte LINHAS = 4; // Linhas do teclado
+const byte COLUNAS = 4; // Colunas do teclado
 
 int x = 0;                // Holds the LCD x position
 int y = 0;                // Holds the LCD y position
-int minValue = 0;         // Lower character location for T9 text entry
+int minValue = 0;         // Lower character location for T9 text entry 
 int maxValue = 0;         // Max character location for T9 text entry
 int keyPressTime = 100;   // Number of loops check of the key
 String msg = "";          // Holds the created message
 String num = "";          // Holds the mobile number
 String alpha = "!@_$%?1 ABC2 DEF3 GHI4 JKL5 MNO6 PQRS7 TUV8 WXYZ9 * 0# "; // Characters for T9 text entry
 
-char hexaKeys[ROWS][COLS] = { // Character matrix for the keypad
+const char TECLAS_MATRIZ[LINHAS][COLUNAS] = { // Matriz de caracteres (mapeamento do teclado)
   {'1', '2', '3', 'A'},
   {'4', '5', '6', 'B'},
   {'7', '8', '9', 'C'},
   {'*', '0', '#', 'D'}
 };
 
-byte rowPins[ROWS] = {9, 8, 7, 6};        // pin assignments for keypad rows
-byte colPins[COLS] = {5, 4, 3, 2};        // pin assignments for keypad columns
+const byte PINOS_LINHAS[LINHAS] = {9, 8, 7, 6}; // Pinos de conexao com as linhas do teclado
+const byte PINOS_COLUNAS[COLUNAS] = {5, 4, 3, 2};      // pin assignments for keypad columns
 
-Keypad customKeypad = Keypad( makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
+Keypad teclado_personalizado = Keypad(makeKeymap(TECLAS_MATRIZ), PINOS_LINHAS, PINOS_COLUNAS, LINHAS, COLUNAS); 
 LiquidCrystal lcd(A0, A1, A2, A3, A4, A5);  // pin assignments for LCD
 
 byte charUp[8] = {  // arrow up character for LCD
@@ -121,6 +121,14 @@ void setup()
 
 
 void loop() {
+  char leitura_teclas = teclado_personalizado.getKey(); // Atribui a variavel a leitura do teclado
+
+  if (leitura_teclas) { // Se alguma tecla foi pressionada
+    Serial.println(leitura_teclas); // Imprime a tecla pressionada na porta serial
+  }
+  
+
+  
   while(!digitalRead(sensor)){
     if(contar){
       contador++;
@@ -156,7 +164,7 @@ void loop() {
 }
 
 void processkey() {
-  char key = customKeypad.getKey();
+  char key = teclado_personalizado.getKey();
   if (isAlpha(key)) {   // check if key press is a letter
     processKeys(key);   // process it according to keys
   } 
@@ -183,7 +191,7 @@ void parseKey(int minValue, int maxValue, char keyPress) {
           i = 0;                      // reset the loop counter
         }
       }
-      key = customKeypad.getKey();  // get the keypress
+      key = teclado_personalizado.getKey();  // get the keypress
       delay(10);                    // delay for some time
     }
     x++;                    // increment the x position
@@ -203,7 +211,7 @@ void enterMSG() {
   msg = "";     // clear the msg variable
   
   do {
-    key = customKeypad.getKey();
+    key = teclado_personalizado.getKey();
     if        (key == '1') {    // if a key is pressed, 
       parseKey(0, 7, key);        // compare it to the alpha string array
     } else if (key == '2') {
@@ -229,7 +237,7 @@ void enterMSG() {
     } else if (key == '#') {
       // do nothing
     }
-  } while (key != '#');       // exit the loop when # is pressed
+  } while (key != 'D');       // exit the loop when # is pressed
   
   lcd.setCursor(0, 0);        // these are for verification only
   lcd.print("created msg");   // feel free to modify it and
@@ -245,7 +253,7 @@ void enterNUM() {
   y = 0;
   num = "";
   do {
-    key = customKeypad.getKey();
+    key = teclado_personalizado.getKey();
     if (isDigit(key)) {                 // verify if the key press is a number
       num = num + key;
       lcd.setCursor(x,y);
@@ -266,7 +274,7 @@ void enterNUM() {
         }
       }
     }
-  } while (key != '#');                   // exit the loop when # is pressed
+  } while (key != 'D');                   // exit the loop when # is pressed
                                           // means entering number is complete
   lcd.setCursor(0, 0);
   lcd.print("Codigo enviado");
@@ -295,7 +303,6 @@ void processKeys(char keyPressed) {
         case 'D':               // Enter
           menu = 1;
           menuLevel = 1;        // go to main menu
-          updateLevel_1();      // show main menu
           delay(DEFAULT_DELAY);
           break;
         case 'A': // Up
@@ -321,12 +328,10 @@ void processKeys(char keyPressed) {
           break;
         case 'A':               // Up
           menu--;
-          updateLevel_1();      // show main menu
           delay(DEFAULT_DELAY);
           break;
         case 'B':               // Down
           menu++;
-          updateLevel_1();      // show main menu
           delay(DEFAULT_DELAY);
           break;
         case 'C': // Back
@@ -344,7 +349,7 @@ void processKeys(char keyPressed) {
           if        (sub == 1) {  // Create SMS
             lcd.clear();
             lcd.print("Digite o codigo");
-            delay(800);
+            delay(1000);
             enterNUM();
             menuLevel = 2;        // go to sub menu
             updateLevel_2();      // show sub menu
@@ -415,7 +420,7 @@ void updateLevel_0() {
   lcd.clear();
   lcd.println("  PASSE CARTAO  ");
   lcd.setCursor(0, 1);
-  lcd.println("ou pressione 'C'");
+  lcd.println("ou pressione 'D'");
 }
 
 void updateLevel_1 () {
