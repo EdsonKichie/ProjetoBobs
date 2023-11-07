@@ -1,7 +1,7 @@
 #include <Ultrasonic.h>
 
 #include <Servo.h>
-int D1,D2 = 0;
+
 #define IN1 8
 #define IN2 9
 #define IN3 10
@@ -9,13 +9,15 @@ int D1,D2 = 0;
 #define VA 6
 #define VB 5
 
-#define SERVO 3
-Servo SM; 
+#define SERVO 3 
+Servo servo; 
 
 #define ECHO A0
 #define TRIG A1
-Ultrasonic US(TRIG, ECHO);
+Ultrasonic sensor(TRIG, ECHO);
 
+int d = 0;
+boolean decidindo = false;
 void setup() {
  pinMode(IN1,1);
  pinMode(IN2,1);
@@ -24,48 +26,36 @@ void setup() {
  pinMode(VA,1);
  pinMode(VB,1);
 
- SM.attach(SERVO);
- SM.write(90);
- frente();
+ servo.attach(SERVO);
+ servo.write(90);
+ 
+ velocidadeA(100);
+ velocidadeB(100);
  
  Serial.begin(9600);
 }
-bool d = true;
-void loop() {
-int dist = US.read();
-
-if(d && dist < 20){
-  d = false;
-  parar();
-  decisao();
-}
-if(!d){
-   if(D1 > D2){
-    virar_esquerda();
-   }else{
-      virar_direita();
-   }
-   d=true;
-    velocidadeA(100);
-    velocidadeB(100);
-    frente();
-}
-}
-
-
-
-
-int decisao(){
-  SM.write(180);
-  delay(1000);
-  D1 = US.read();
-  Serial.println(D1);
-  
-  SM.write(0);
-  delay(1000);
-  D2 = US.read();
-  Serial.println(D2);
-  SM.write(90);
+char decisao(){
+  decidindo = true;
+  int desq, ddir = 0;
+  servo.write(0);
+  delay(200);
+  desq = sensor.read();
+  Serial.println(desq);
+  servo.write(180);
+  delay(200);
+  ddir = sensor.read();
+  Serial.println(desq);
+  if(desq > ddir && desq > 20){
+     virar_esquerda();
+  }else if(ddir > desq && ddir > 20){
+    virar_direita();
+  }else{
+    virar180();
+  }
+  servo.write(90);
+  frente();
+  delay(200);
+  decidindo = false;
 }
 void virar_esquerda(){
   digitalWrite(IN1,1);
@@ -99,9 +89,28 @@ void voltar(){
   digitalWrite(IN3,0);
   digitalWrite(IN4,1);
 }
+void virar180(){
+  digitalWrite(IN1,0);
+  digitalWrite(IN2,1);
+  digitalWrite(IN3,0);
+  digitalWrite(IN4,1);
+  delay(1000);
+}
 void velocidadeA(int v){
   analogWrite(VA,v);
 }
 void velocidadeB(int v){
   analogWrite(VB,v);
+}
+
+
+
+void loop() {
+  if(!decidindo){
+    d = sensor.read();
+  }  
+  if(d < 20){
+    parar();
+    decisao();
+  }
 }
